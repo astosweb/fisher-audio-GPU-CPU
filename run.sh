@@ -17,6 +17,12 @@ MODEL_MARKER="$ROOT/checkpoints/s2-pro/codec.pth"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-7860}"
 OPEN_BROWSER="${OPEN_BROWSER:-auto}"
+CACHE_DIR="${CACHE_DIR:-$ROOT/.cache}"
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_DIR/torchinductor}"
+export FISH_MAX_SEQ_LEN="${FISH_MAX_SEQ_LEN:-4096}"
+export FISH_COMPILE="${FISH_COMPILE:-1}"
+export FISH_WARMUP="${FISH_WARMUP:-1}"
 
 log() { printf '\n▸ %s\n' "$*"; }
 
@@ -128,7 +134,7 @@ open_firewall_port
 open_browser
 
 echo
-echo "Fish Audio S2 Pro — loading model (first run may take a minute)..."
+echo "Fish Audio S2 Pro — loading model (warmup compile may take 1-2 min on first run)..."
 print_access_info
 
 exec python "$ROOT/app.py"
