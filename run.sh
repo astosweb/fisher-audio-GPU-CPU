@@ -4,6 +4,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+fi
+
 VENV="$ROOT/.venv"
 FISH_SPEECH_DIR="$ROOT/vendor/fish-speech"
 MODEL_MARKER="$ROOT/checkpoints/s2-pro/codec.pth"

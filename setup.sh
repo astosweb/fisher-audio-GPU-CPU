@@ -2,13 +2,30 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+fi
+
 VENV="$ROOT/.venv"
 CUDA_EXTRA="${CUDA_EXTRA:-cu128}"
 FISH_SPEECH_DIR="$ROOT/vendor/fish-speech"
 
 if command -v apt-get &>/dev/null; then
   sudo apt-get update
-  sudo apt-get install -y portaudio19-dev libsox-dev ffmpeg git
+  sudo apt-get install -y \
+    build-essential \
+    python3-dev \
+    git \
+    ffmpeg \
+    libsox-dev \
+    libasound-dev \
+    portaudio19-dev \
+    libportaudio2 \
+    libportaudiocpp0
 fi
 
 if ! command -v python3 &>/dev/null; then
@@ -27,6 +44,23 @@ fi
 
 pip install torch==2.8.0 torchaudio==2.8.0 \
   --index-url "https://download.pytorch.org/whl/${CUDA_EXTRA}"
+
+# fish-speech depends on pyaudio; build it before the editable install (needs portaudio dev libs).
+if ! pip install --no-build-isolation pyaudio; then
+  cat >&2 <<'EOF'
+PyAudio failed to build. On Ubuntu/Debian, run:
+
+  sudo apt-get update
+  sudo apt-get install -y build-essential python3-dev portaudio19-dev \
+    libportaudio2 libportaudiocpp0 libasound-dev libsox-dev ffmpeg
+
+Then re-run ./setup.sh
+
+With conda: conda install -c conda-forge pyaudio
+EOF
+  exit 1
+fi
+
 pip install -e "$FISH_SPEECH_DIR"
 pip install -r "$ROOT/requirements.txt"
 

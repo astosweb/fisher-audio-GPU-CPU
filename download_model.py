@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import os
+
 from huggingface_hub import snapshot_download
 
 from tts_engine import MODEL, MODEL_DIR
@@ -13,9 +15,16 @@ def main() -> None:
         print(f"Model already present at {MODEL_DIR}")
         return
 
+    token = os.environ.get("HF_TOKEN")
+    if not token:
+        raise SystemExit(
+            "HF_TOKEN is required to download the model. "
+            "Copy .env.example to .env and set your Hugging Face token."
+        )
+
     MODEL_DIR.parent.mkdir(parents=True, exist_ok=True)
     print(f"Downloading {MODEL} to {MODEL_DIR} (~10 GB on first run)...")
-    snapshot_download(MODEL, local_dir=str(MODEL_DIR))
+    snapshot_download(MODEL, local_dir=str(MODEL_DIR), token=token)
     print(f"Saved to {MODEL_DIR}")
 
 
