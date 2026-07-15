@@ -28,33 +28,37 @@ CUDA_EXTRA="${CUDA_EXTRA:-cu128}"
 FISH_SPEECH_DIR="$ROOT/vendor/fish-speech"
 
 resolve_python() {
-  local candidate version major minor
-  for candidate in python3.13 python3; do
-    if ! command -v "$candidate" &>/dev/null; then
+  local candidate major minor path
+  for candidate in python3.13 /opt/homebrew/bin/python3.13 /opt/homebrew/opt/python@3.13/bin/python3.13 python3; do
+    if command -v "$candidate" &>/dev/null; then
+      path="$(command -v "$candidate")"
+    elif [ -x "$candidate" ]; then
+      path="$candidate"
+    else
       continue
     fi
-    IFS=. read -r major minor _ < <("$candidate" -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+    IFS=. read -r major minor _ < <("$path" -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
     if [ "$major" -gt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -ge 13 ]; }; then
-      printf '%s' "$candidate"
+      printf '%s' "$path"
       return 0
     fi
   done
 
   if [ "$BACKEND" = "mlx" ] && command -v brew &>/dev/null; then
     if ! brew list python@3.13 &>/dev/null; then
-      echo "Installing Python 3.13 (required for MLX)..."
-      brew install python@3.13
+      echo "Installing Python 3.13 (required for MLX)..." >&2
+      brew install python@3.13 >&2
     fi
     printf '%s' "$(brew --prefix python@3.13)/bin/python3.13"
     return 0
   fi
 
   if command -v python3 &>/dev/null; then
-    printf '%s' python3
+    printf '%s' "$(command -v python3)"
     return 0
   fi
 
-  echo "python3 is required"
+  echo "python3 is required" >&2
   exit 1
 }
 
