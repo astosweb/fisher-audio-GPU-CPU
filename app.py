@@ -23,10 +23,14 @@ OUTPUTS = ROOT / "outputs"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = os.environ.get("PORT", "7860")
     print("Loading Fish Audio S2 Pro (cached after first run)...")
     get_model()
     OUTPUTS.mkdir(exist_ok=True)
-    print("Model ready.")
+    print(f"Model ready — listening on http://127.0.0.1:{port}")
+    if host in ("0.0.0.0", "::"):
+        print(f"  Network: http://0.0.0.0:{port} (all interfaces)")
     yield
 
 

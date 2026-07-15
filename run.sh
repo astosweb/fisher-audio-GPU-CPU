@@ -64,12 +64,34 @@ open_browser() {
   ) &
 }
 
-print_banner() {
-  local network_url
-  if [ "$HOST" = "0.0.0.0" ]; then
-    local ip
+server_ip() {
+  local ip
+  ip="$(curl -4 -s --max-time 2 ifconfig.me 2>/dev/null || true)"
+  if [ -z "$ip" ]; then
     ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
-    network_url="http://${ip:-<server-ip>}:${PORT}"
+  fi
+  printf '%s' "${ip:-<server-ip>}"
+}
+
+open_firewall_port() {
+  if ! command -v ufw &>/dev/null; then
+    return
+  fi
+  if ! ufw status 2>/dev/null | grep -q "Status: active"; then
+    return
+  fi
+  if ufw status 2>/dev/null | grep -q "${PORT}/tcp"; then
+    return
+  fi
+  log "Opening port ${PORT} in ufw..."
+  sudo ufw allow "${PORT}/tcp" >/dev/null 2>&1 || true
+}
+
+print_access_info() {
+  local ip network_url
+  ip="$(server_ip)"
+  if [ "$HOST" = "0.0.0.0" ]; then
+    network_url="http://${ip}:${PORT}"
   else
     network_url="http://${HOST}:${PORT}"
   fi
@@ -78,6 +100,14 @@ print_banner() {
   echo "Fish Audio S2 Pro — Web UI"
   echo "  Local:   http://127.0.0.1:${PORT}"
   echo "  Network: ${network_url}"
+  if [ -n "${SSH_CONNECTION:-}" ]; then
+    echo
+    echo "  Remote access (run on your laptop, then open http://127.0.0.1:${PORT}):"
+    echo "    ssh -L ${PORT}:127.0.0.1:${PORT} root@${ip}"
+  fi
+  echo
+  echo "  If the network URL does not load, allow TCP ${PORT} in your cloud firewall"
+  echo "  (DigitalOcean → Droplet → Networking → Firewalls)."
   echo "  Press Ctrl+C to stop"
   echo
 }
@@ -94,7 +124,11 @@ if [ ! -f "$MODEL_MARKER" ]; then
 fi
 
 check_cuda
+open_firewall_port
 open_browser
-print_banner
+
+echo
+echo "Fish Audio S2 Pro — loading model (first run may take a minute)..."
+print_access_info
 
 exec python "$ROOT/app.py"
