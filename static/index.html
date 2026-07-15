@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fish Audio S2 Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0f14;
+      --surface: rgba(18, 28, 38, 0.72);
+      --surface-solid: #121c26;
+      --border: rgba(120, 180, 220, 0.14);
+      --border-hover: rgba(120, 200, 255, 0.35);
+      --text: #e8f0f7;
+      --muted: #8aa3b8;
+      --accent: #3dd6c6;
+      --accent-dim: rgba(61, 214, 198, 0.15);
+      --accent-glow: rgba(61, 214, 198, 0.35);
+      --coral: #ff7b6b;
+      --tag-bg: rgba(61, 214, 198, 0.1);
+      --tag-border: rgba(61, 214, 198, 0.28);
+      --danger: #ff6b6b;
+      --radius: 14px;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(61, 214, 198, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(255, 123, 107, 0.08), transparent),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(40, 120, 200, 0.1), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #2a9d8f);
+      display: grid;
+      place-items: center;
+      font-size: 1.35rem;
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 520px;
+      margin: 0.35rem auto 0;
+    }
+
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.35rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.85rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+      color: var(--muted);
+    }
+
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 0.85rem 1rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+      line-height: 1.6;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.88rem;
+    }
+
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .tag-section { margin-bottom: 0.75rem; }
+    .tag-section:last-child { margin-bottom: 0; }
+
+    .tag-category {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .tag {
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      padding: 0.28rem 0.55rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .tag:hover {
+      background: rgba(61, 214, 198, 0.2);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .tag:active { transform: translateY(0); }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .preset {
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .collapsible-header .card-title { margin-bottom: 0; }
+
+    .chevron {
+      color: var(--muted);
+      transition: transform 0.2s;
+      font-size: 0.85rem;
+    }
+
+    .collapsible.open .chevron { transform: rotate(180deg); }
+
+    .collapsible-body {
+      display: none;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .collapsible.open .collapsible-body { display: block; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .slider-row:last-child { margin-bottom: 0; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .slider-value {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    .file-drop {
+      border: 1.5px dashed var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .file-drop:hover, .file-drop.dragover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .file-drop.has-file {
+      border-style: solid;
+      border-color: var(--tag-border);
+      color: var(--text);
+    }
+
+    .file-drop input { display: none; }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      flex: 1;
+      min-width: 180px;
+      background: linear-gradient(135deg, var(--accent), #2bb8aa);
+      color: #041018;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.9rem 1.5rem;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 8px 28px var(--accent-glow);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 36px var(--accent-glow);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      font-size: 0.82rem;
+      color: var(--muted);
+      min-height: 1.25rem;
+    }
+
+    .status.error { color: var(--danger); }
+    .status.success { color: var(--accent); }
+
+    .player-card {
+      display: none;
+    }
+
+    .player-card.visible {
+      display: block;
+      animation: fadeUp 0.35s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .waveform {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .waveform span {
+      display: block;
+      width: 4px;
+      border-radius: 2px;
+      background: var(--accent);
+      animation: wave 1.2s ease-in-out infinite;
+    }
+
+    .waveform span:nth-child(1) { height: 18px; animation-delay: 0s; }
+    .waveform span:nth-child(2) { height: 32px; animation-delay: 0.1s; }
+    .waveform span:nth-child(3) { height: 24px; animation-delay: 0.2s; }
+    .waveform span:nth-child(4) { height: 40px; animation-delay: 0.15s; }
+    .waveform span:nth-child(5) { height: 28px; animation-delay: 0.25s; }
+    .waveform span:nth-child(6) { height: 36px; animation-delay: 0.05s; }
+    .waveform span:nth-child(7) { height: 20px; animation-delay: 0.3s; }
+    .waveform span:nth-child(8) { height: 44px; animation-delay: 0.12s; }
+    .waveform span:nth-child(9) { height: 26px; animation-delay: 0.22s; }
+    .waveform span:nth-child(10) { height: 34px; animation-delay: 0.08s; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(0.5); opacity: 0.4; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    .player-card:not(.playing) .waveform span {
+      animation: none;
+      opacity: 0.25;
+    }
+
+    audio {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 0.25rem;
+    }
+
+    .meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.65rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    .hint code {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--accent);
+      font-size: 0.75rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(4, 16, 24, 0.25);
+      border-top-color: #041018;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: -2px;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .speaker-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .speaker-row label {
+      margin-bottom: 0;
+      min-width: 4.5rem;
+    }
+
+    .speaker-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .speaker-option {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .speaker-option:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+
+    .speaker-option.active {
+      background: rgba(255, 123, 107, 0.15);
+      border-color: rgba(255, 123, 107, 0.45);
+      color: var(--coral);
+      box-shadow: 0 0 0 3px rgba(255, 123, 107, 0.12);
+    }
+
+    .speaker-option.dialogue:not(.active) {
+      border-color: rgba(61, 214, 198, 0.28);
+    }
+
+    .speaker-tag {
+      background: rgba(255, 123, 107, 0.1);
+      border-color: rgba(255, 123, 107, 0.28);
+      color: var(--coral);
+    }
+
+    .speaker-tag:hover {
+      background: rgba(255, 123, 107, 0.2);
+      border-color: var(--coral);
+    }
+
+    select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.65rem 0.85rem;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🐟</div>
+        <h1>Fish Audio S2 Pro</h1>
+      </div>
+      <p class="subtitle">Local text-to-speech on Apple Silicon. Click tags to insert inline controls, or type your own like <code style="color:var(--accent);font-family:JetBrains Mono,monospace;font-size:0.85em">[whisper in small voice]</code>.</p>
+    </header>
+
+    <div class="card">
+      <div class="card-title">Script</div>
+
+      <div class="speaker-row">
+        <label>Default speaker</label>
+        <div class="speaker-picker" id="speaker-picker">
+          <button type="button" class="speaker-option dialogue active" data-speaker="0" title="Built-in dialogue voice">Speaker 0</button>
+          <button type="button" class="speaker-option dialogue" data-speaker="1" title="Built-in dialogue voice">Speaker 1</button>
+          <button type="button" class="speaker-option" data-speaker="2" title="Needs cloned reference audio">Speaker 2</button>
+          <button type="button" class="speaker-option" data-speaker="3" title="Needs cloned reference audio">Speaker 3</button>
+          <button type="button" class="speaker-option" data-speaker="4" title="Needs cloned reference audio">Speaker 4</button>
+        </div>
+      </div>
+      <p class="hint" id="speaker-hint" style="margin-top:-0.35rem;margin-bottom:0.85rem">
+        For <strong>two-person dialogue</strong>, put both turns in one text with
+        <code>&lt;|speaker:0|&gt;</code> and <code>&lt;|speaker:1|&gt;</code> — not separate generations.
+        Speaker 2–4 only work with cloned reference audio assigned to that slot.
+      </p>
+
+      <label for="text">Text with inline tags</label>
+      <textarea id="text" placeholder="[excited] Hello! This is Fish Audio on my Mac.">[excited] Hello! Fish Audio S2 Pro is running locally on my Mac.</textarea>
+      <p class="hint">Place tags <strong>immediately before</strong> the words they affect — e.g. <code>[whispering] keep this quiet</code>. Tags like <code>[pause]</code> and <code>[laughing]</code> produce extra audio, so longer scripts may need a higher max-token setting.</p>
+
+      <div class="presets">
+        <button type="button" class="preset" data-preset="excited">Excited demo</button>
+        <button type="button" class="preset" data-preset="whisper">Whisper demo</button>
+        <button type="button" class="preset" data-preset="story">Story demo</button>
+        <button type="button" class="preset" data-preset="dialogue">Dialogue demo</button>
+        <button type="button" class="preset" data-preset="dialogue_tr">Turkish dialogue</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Insert tags</div>
+      <div id="tag-panels"></div>
+    </div>
+
+    <div class="card collapsible" id="clone-section">
+      <div class="collapsible-header" onclick="toggleSection('clone-section')">
+        <div class="card-title">Voice cloning (optional)</div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint" style="margin-top:0;margin-bottom:0.85rem">
+          For dialogue, upload one reference clip per speaker and assign each to the matching slot.
+          Speaker 0 and 1 also work without cloning as built-in dialogue voices.
+        </p>
+        <div class="grid-2">
+          <div>
+            <label>Speaker 0 reference audio</label>
+            <label class="file-drop" id="file-drop">
+              <input type="file" id="ref-audio" accept="audio/*,.wav,.mp3,.m4a,.flac" />
+              <span id="file-label">Drop a WAV/MP3 or click to browse</span>
+            </label>
+          </div>
+          <div>
+            <label for="ref-text">Speaker 0 transcript</label>
+            <input type="text" id="ref-text" placeholder="Exact words spoken in the reference clip" />
+          </div>
+        </div>
+        <input type="hidden" id="ref-speaker" value="0" />
+        <div class="grid-2" style="margin-top:0.85rem">
+          <div>
+            <label>Speaker 1 reference audio</label>
+            <label class="file-drop" id="file-drop-1">
+              <input type="file" id="ref-audio-1" accept="audio/*,.wav,.mp3,.m4a,.flac" />
+              <span id="file-label-1">Drop a WAV/MP3 or click to browse</span>
+            </label>
+          </div>
+          <div>
+            <label for="ref-text-1">Speaker 1 transcript</label>
+            <input type="text" id="ref-text-1" placeholder="Exact words spoken in the second clip" />
+          </div>
+        </div>
+        <input type="hidden" id="ref-speaker-1" value="1" />
+      </div>
+    </div>
+
+    <div class="card collapsible" id="advanced-section">
+      <div class="collapsible-header" onclick="toggleSection('advanced-section')">
+        <div class="card-title">Advanced settings</div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="slider-row">
+          <div>
+            <label for="temperature">Temperature</label>
+            <input type="range" id="temperature" min="0.1" max="1.5" step="0.05" value="0.7" />
+          </div>
+          <span class="slider-value" id="temperature-val">0.70</span>
+        </div>
+        <div class="slider-row">
+          <div>
+            <label for="top-p">Top P</label>
+            <input type="range" id="top-p" min="0.1" max="1" step="0.05" value="0.7" />
+          </div>
+          <span class="slider-value" id="top-p-val">0.70</span>
+        </div>
+        <div class="slider-row">
+          <div>
+            <label for="max-tokens">Max tokens <span style="font-weight:400;color:var(--muted)">(auto-boosted when tags present)</span></label>
+            <input type="range" id="max-tokens" min="256" max="4096" step="128" value="2048" />
+          </div>
+          <span class="slider-value" id="max-tokens-val">2048</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="actions">
+        <button type="button" class="btn-primary" id="generate-btn">Generate speech</button>
+      </div>
+      <p class="status" id="status" style="margin-top:0.85rem"></p>
+    </div>
+
+    <div class="card player-card" id="player-card">
+      <div class="card-title">Output</div>
+      <div class="waveform" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <audio id="audio-player" controls></audio>
+      <div class="meta">
+        <span id="meta-duration"></span>
+        <span id="meta-rate"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TAG_GROUPS = {
+      Emotion: ["excited", "angry", "sad", "surprised", "shocked", "delight"],
+      Voice: ["whispering", "low voice", "shouting", "screaming", "loud", "soft tone"],
+      Expression: ["laughing", "chuckle", "sigh", "inhale", "exhale", "panting", "clearing throat"],
+      Pacing: ["pause", "short pause", "emphasis"],
+      Style: ["singing", "excited tone", "professional broadcast tone", "volume up", "volume down", "echo"],
+    };
+
+    const PRESETS = {
+      excited: "[excited] And then I saw it! [laughing] You won't believe this.",
+      whisper: "[whispering] Just between us... [short pause] this model runs entirely on your Mac.",
+      story: "[pause] Once upon a time, in a quiet village by the sea. [sad] A fisherman told a tale. [whispering] Listen closely.",
+      dialogue: "<|speaker:0|>[excited] Welcome everyone to the demo! <|speaker:1|>[laughing] Thanks for having me. <|speaker:0|>[whispering] Let's hear multi-speaker dialogue.",
+      dialogue_tr: "<|speaker:0|>[whispering] Gönderdiğin arabalar güzel ama çok modern görünmüyorlar. <|speaker:1|>[whispering] Bana biraz daha şık bir araba lazım.",
+    };
+
+    const SPEAKER_TAG_RE = /<\|speaker:(\d+)\|>/g;
+    const textArea = document.getElementById("text");
+    const speakerHint = document.getElementById("speaker-hint");
+
+    let selectedSpeaker = 0;
+
+    function getSpeakerIds(text) {
+      return [...text.matchAll(SPEAKER_TAG_RE)].map((match) => Number(match[1]));
+    }
+
+    function updateSpeakerHint() {
+      const ids = getSpeakerIds(textArea.value);
+      if (ids.length >= 2) {
+        speakerHint.innerHTML =
+          `Dialogue mode: speakers ${[...new Set(ids)].join(", ")} detected. ` +
+          "Use <code>&lt;|speaker:0|&gt;</code> + <code>&lt;|speaker:1|&gt;</code> for built-in voices, " +
+          "or upload a clone for each extra slot.";
+        return;
+      }
+      if (ids.length === 1) {
+        speakerHint.innerHTML =
+          `Inline tag uses speaker ${ids[0]}. The default speaker buttons above are ignored while tags are present.`;
+        return;
+      }
+      speakerHint.innerHTML =
+        "For <strong>two-person dialogue</strong>, put both turns in one text with " +
+        "<code>&lt;|speaker:0|&gt;</code> and <code>&lt;|speaker:1|&gt;</code> — not separate generations. " +
+        "Speaker 2–4 only work with cloned reference audio assigned to that slot.";
+    }
+
+    textArea.addEventListener("input", updateSpeakerHint);
+    updateSpeakerHint();
+
+    document.querySelectorAll(".speaker-option").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selectedSpeaker = Number(btn.dataset.speaker);
+        document.querySelectorAll(".speaker-option").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+
+    const speakerTagSection = document.createElement("div");
+    speakerTagSection.className = "tag-section";
+    speakerTagSection.innerHTML = `<div class="tag-category">Speakers</div><div class="tags"></div>`;
+    const speakerTagContainer = speakerTagSection.querySelector(".tags");
+    for (let i = 0; i < 5; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tag speaker-tag";
+      btn.textContent = `<|speaker:${i}|>`;
+      btn.title = `Insert speaker ${i} tag`;
+      btn.addEventListener("click", () => insertSpeakerTag(i));
+      speakerTagContainer.appendChild(btn);
+    }
+
+    const tagPanels = document.getElementById("tag-panels");
+    tagPanels.appendChild(speakerTagSection);
+    for (const [category, tags] of Object.entries(TAG_GROUPS)) {
+      const section = document.createElement("div");
+      section.className = "tag-section";
+      section.innerHTML = `<div class="tag-category">${category}</div><div class="tags"></div>`;
+      const container = section.querySelector(".tags");
+      tags.forEach((tag) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tag";
+        btn.textContent = `[${tag}]`;
+        btn.title = `Insert [${tag}]`;
+        btn.addEventListener("click", () => insertTag(tag));
+        container.appendChild(btn);
+      });
+      tagPanels.appendChild(section);
+    }
+
+    function insertSpeakerTag(speaker) {
+      const ta = textArea;
+      const insert = `<|speaker:${speaker}|>`;
+      const start = ta.selectionStart ?? ta.value.length;
+      const end = ta.selectionEnd ?? start;
+      ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
+      const pos = start + insert.length;
+      ta.setSelectionRange(pos, pos);
+      ta.focus();
+      updateSpeakerHint();
+    }
+
+    function insertTag(tag) {
+      const ta = textArea;
+      const insert = `[${tag}] `;
+      const start = ta.selectionStart ?? ta.value.length;
+      const end = ta.selectionEnd ?? start;
+      ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
+      const pos = start + insert.length;
+      ta.setSelectionRange(pos, pos);
+      ta.focus();
+    }
+
+    function toggleSection(id) {
+      document.getElementById(id).classList.toggle("open");
+    }
+
+    document.querySelectorAll(".preset").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        textArea.value = PRESETS[btn.dataset.preset] || "";
+        if (btn.dataset.preset.startsWith("dialogue")) {
+          document.querySelectorAll(".speaker-option").forEach((b) => b.classList.remove("active"));
+        }
+        updateSpeakerHint();
+      });
+    });
+
+    ["temperature", "top-p", "max-tokens"].forEach((id) => {
+      const input = document.getElementById(id);
+      const val = document.getElementById(`${id}-val`);
+      const fmt = id === "max-tokens" ? (v) => v : (v) => Number(v).toFixed(2);
+      input.addEventListener("input", () => { val.textContent = fmt(input.value); });
+    });
+
+    const fileDrop = document.getElementById("file-drop");
+    const fileDrop1 = document.getElementById("file-drop-1");
+    const refAudio = document.getElementById("ref-audio");
+    const refAudio1 = document.getElementById("ref-audio-1");
+    const fileLabel = document.getElementById("file-label");
+    const fileLabel1 = document.getElementById("file-label-1");
+
+    function bindFileDrop(drop, input, label) {
+      input.addEventListener("change", () => {
+        if (input.files[0]) {
+          drop.classList.add("has-file");
+          label.textContent = input.files[0].name;
+          document.getElementById("clone-section").classList.add("open");
+        }
+      });
+      ["dragenter", "dragover"].forEach((ev) => {
+        drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("dragover"); });
+      });
+      ["dragleave", "drop"].forEach((ev) => {
+        drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("dragover"); });
+      });
+      drop.addEventListener("drop", (e) => {
+        if (e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          input.dispatchEvent(new Event("change"));
+        }
+      });
+    }
+
+    bindFileDrop(fileDrop, refAudio, fileLabel);
+    bindFileDrop(fileDrop1, refAudio1, fileLabel1);
+
+    const generateBtn = document.getElementById("generate-btn");
+    const statusEl = document.getElementById("status");
+    const playerCard = document.getElementById("player-card");
+    const audioPlayer = document.getElementById("audio-player");
+
+    audioPlayer.addEventListener("play", () => playerCard.classList.add("playing"));
+    audioPlayer.addEventListener("pause", () => playerCard.classList.remove("playing"));
+    audioPlayer.addEventListener("ended", () => playerCard.classList.remove("playing"));
+
+    generateBtn.addEventListener("click", async () => {
+      const text = textArea.value.trim();
+      if (!text) {
+        statusEl.textContent = "Enter some text first.";
+        statusEl.className = "status error";
+        return;
+      }
+
+      const speakerIds = getSpeakerIds(text);
+      if (speakerIds.length >= 2 && speakerIds.some((id) => id > 1)) {
+        const refFile = refAudio.files[0];
+        const refFile1 = refAudio1.files[0];
+        if (!refFile || !refFile1) {
+          statusEl.textContent =
+            "For dialogue with speaker 2–4, upload reference audio for each speaker slot. " +
+            "Or use <|speaker:0|> and <|speaker:1|> for built-in dialogue voices.";
+          statusEl.className = "status error";
+          document.getElementById("clone-section").classList.add("open");
+          return;
+        }
+      }
+
+      const refFile = refAudio.files[0];
+      const refText = document.getElementById("ref-text").value.trim();
+      const refFile1 = refAudio1.files[0];
+      const refText1 = document.getElementById("ref-text-1").value.trim();
+      if (refFile && !refText) {
+        statusEl.textContent = "Add a reference transcript for speaker 0.";
+        statusEl.className = "status error";
+        document.getElementById("clone-section").classList.add("open");
+        return;
+      }
+      if (refFile1 && !refText1) {
+        statusEl.textContent = "Add a reference transcript for speaker 1.";
+        statusEl.className = "status error";
+        document.getElementById("clone-section").classList.add("open");
+        return;
+      }
+
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = '<span class="spinner"></span>Generating…';
+      statusEl.textContent = "Synthesizing speech — this may take 10–30 seconds…";
+      statusEl.className = "status";
+      playerCard.classList.remove("visible", "playing");
+
+      const form = new FormData();
+      form.append("text", text);
+      form.append("speaker", String(selectedSpeaker));
+      form.append("ref_speaker", document.getElementById("ref-speaker").value);
+      form.append("ref_speaker_1", document.getElementById("ref-speaker-1").value);
+      const maxTokensEl = document.getElementById("max-tokens");
+      let maxTokens = Number(maxTokensEl.value);
+      if (/\[[^\]]+\]/.test(text)) {
+        const tagCount = (text.match(/\[[^\]]+\]/g) || []).length;
+        maxTokens = Math.max(maxTokens, Math.min(4096, Math.ceil(text.length * 2.2 + tagCount * 96)));
+      }
+      form.append("temperature", document.getElementById("temperature").value);
+      form.append("top_p", document.getElementById("top-p").value);
+      form.append("max_tokens", String(maxTokens));
+      form.append("ref_text", refText);
+      form.append("ref_text_1", refText1);
+      if (refFile) form.append("ref_audio", refFile);
+      if (refFile1) form.append("ref_audio_1", refFile1);
+
+      try {
+        const res = await fetch("/api/generate", { method: "POST", body: form });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Generation failed");
+
+        audioPlayer.src = `${data.audio_url}?t=${Date.now()}`;
+        document.getElementById("meta-duration").textContent = `${data.duration}s`;
+        document.getElementById("meta-rate").textContent = `${data.sample_rate} Hz`;
+        playerCard.classList.add("visible");
+        statusEl.textContent = "Done! Press play below.";
+        statusEl.className = "status success";
+        await audioPlayer.play().catch(() => {});
+      } catch (err) {
+        statusEl.textContent = err.message;
+        statusEl.className = "status error";
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = "Generate speech";
+      }
+    });
+  </script>
+</body>
+</html>
