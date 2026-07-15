@@ -11,23 +11,52 @@ if [ -f "$ROOT/.env" ]; then
   set +a
 fi
 
+detect_backend() {
+  if [ -n "${FISH_BACKEND:-}" ]; then
+    printf '%s' "$FISH_BACKEND"
+    return
+  fi
+  if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
+    printf 'mlx'
+  else
+    printf 'cuda'
+  fi
+}
+
+BACKEND="$(detect_backend)"
 VENV="$ROOT/.venv"
 FISH_SPEECH_DIR="$ROOT/vendor/fish-speech"
-MODEL_MARKER="$ROOT/checkpoints/s2-pro/codec.pth"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-7860}"
 OPEN_BROWSER="${OPEN_BROWSER:-auto}"
 CACHE_DIR="${CACHE_DIR:-$ROOT/.cache}"
-export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
-export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_DIR/torchinductor}"
-export FISH_MAX_SEQ_LEN="${FISH_MAX_SEQ_LEN:-4096}"
-export FISH_COMPILE="${FISH_COMPILE:-1}"
-export FISH_WARMUP="${FISH_WARMUP:-1}"
+
+if [ "$BACKEND" = "mlx" ]; then
+  MODEL_MARKER="$ROOT/.cache/mlx-fish-s2-pro.ready"
+  MODEL_LABEL="Fish Audio S2 Pro (MLX)"
+else
+  MODEL_MARKER="$ROOT/checkpoints/s2-pro/codec.pth"
+  MODEL_LABEL="Fish Audio S2 Pro"
+  export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+  export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_DIR/torchinductor}"
+  export FISH_MAX_SEQ_LEN="${FISH_MAX_SEQ_LEN:-4096}"
+  export FISH_COMPILE="${FISH_COMPILE:-1}"
+  export FISH_WARMUP="${FISH_WARMUP:-1}"
+fi
 
 log() { printf '\n▸ %s\n' "$*"; }
 
 need_setup() {
-  [ ! -d "$VENV" ] || [ ! -x "$VENV/bin/python" ] || [ ! -d "$FISH_SPEECH_DIR" ]
+  if [ ! -d "$VENV" ] || [ ! -x "$VENV/bin/python" ]; then
+    return 0
+  fi
+  if [ "$BACKEND" = "cuda" ]; then
+    [ ! -d "$FISH_SPEECH_DIR" ] && return 0
+    "$VENV/bin/python" -c "import fish_speech" 2>/dev/null || return 0
+  else
+    "$VENV/bin/python" -c "import mlx_speech" 2>/dev/null || return 0
+  fi
+  return 1
 }
 
 run_setup() {
@@ -36,11 +65,18 @@ run_setup() {
 }
 
 download_model() {
-  log "Downloading Fish Audio S2 Pro weights (~10 GB)..."
+  if [ "$BACKEND" = "mlx" ]; then
+    log "Downloading Fish Audio S2 Pro MLX weights (~4.5 GB)..."
+  else
+    log "Downloading Fish Audio S2 Pro weights (~10 GB)..."
+  fi
   "$VENV/bin/python" "$ROOT/download_model.py"
 }
 
 check_cuda() {
+  if [ "$BACKEND" != "cuda" ]; then
+    return
+  fi
   if ! "$VENV/bin/python" - <<'PY' 2>/dev/null; then
 import torch
 if torch.cuda.is_available():
@@ -103,7 +139,8 @@ print_access_info() {
   fi
 
   echo
-  echo "Fish Audio S2 Pro — Web UI"
+  echo "${MODEL_LABEL} — Web UI"
+  echo "  Backend: ${BACKEND}"
   echo "  Local:   http://127.0.0.1:${PORT}"
   echo "  Network: ${network_url}"
   if [ -n "${SSH_CONNECTION:-}" ]; then
@@ -111,9 +148,11 @@ print_access_info() {
     echo "  Remote access (run on your laptop, then open http://127.0.0.1:${PORT}):"
     echo "    ssh -L ${PORT}:127.0.0.1:${PORT} root@${ip}"
   fi
-  echo
-  echo "  If the network URL does not load, allow TCP ${PORT} in your cloud firewall"
-  echo "  (DigitalOcean → Droplet → Networking → Firewalls)."
+  if [ "$BACKEND" = "cuda" ]; then
+    echo
+    echo "  If the network URL does not load, allow TCP ${PORT} in your cloud firewall"
+    echo "  (DigitalOcean → Droplet → Networking → Firewalls)."
+  fi
   echo "  Press Ctrl+C to stop"
   echo
 }
@@ -134,7 +173,11 @@ open_firewall_port
 open_browser
 
 echo
-echo "Fish Audio S2 Pro — loading model (warmup compile may take 1-2 min on first run)..."
+if [ "$BACKEND" = "mlx" ]; then
+  echo "${MODEL_LABEL} — loading model..."
+else
+  echo "${MODEL_LABEL} — loading model (warmup compile may take 1-2 min on first run)..."
+fi
 print_access_info
 
 exec python "$ROOT/app.py"

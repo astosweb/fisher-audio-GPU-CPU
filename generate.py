@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate speech with Fish Audio S2 Pro on GPU (CUDA)."""
+"""Generate speech with Fish Audio S2 Pro (MLX on Mac, CUDA on GPU servers)."""
 
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
-from tts_engine import MODEL, generate_speech, write_mp3
+from tts_engine import BACKEND, MODEL, generate_speech, write_mp3
 
 
 def main() -> None:
@@ -50,7 +50,7 @@ def main() -> None:
     if bool(args.ref_audio) != bool(args.ref_text):
         parser.error("--ref-audio and --ref-text must be used together")
 
-    print(f"Loading {MODEL} (run download_model.py if weights are missing)...")
+    print(f"Loading {MODEL} via {BACKEND} (run download_model.py if weights are missing)...")
     print(f"Generating: {args.text!r}")
     result = generate_speech(
         args.text,

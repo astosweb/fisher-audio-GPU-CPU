@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fish Audio S2 Pro — GPU web UI."""
+"""Fish Audio S2 Pro — MLX on Mac, CUDA on GPU servers."""
 
 from __future__ import annotations
 
@@ -16,8 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.datastructures import UploadFile
 
 from tts_engine import (
+    BACKEND,
     DIALOGUE_SPEAKERS,
     MAX_SPEAKERS,
+    MODEL,
     SpeakerRef,
     generate_speech,
     get_model,
@@ -33,10 +35,10 @@ OUTPUTS = ROOT / "outputs"
 async def lifespan(app: FastAPI):
     host = os.environ.get("HOST", "0.0.0.0")
     port = os.environ.get("PORT", "7860")
-    print("Loading Fish Audio S2 Pro (cached after first run)...")
+    print(f"Loading {MODEL} via {BACKEND} backend (cached after first run)...")
     get_model()
     OUTPUTS.mkdir(exist_ok=True)
-    print(f"Model ready — listening on http://127.0.0.1:{port}")
+    print(f"Model ready ({BACKEND}) — listening on http://127.0.0.1:{port}")
     if host in ("0.0.0.0", "::"):
         print(f"  Network: http://0.0.0.0:{port} (all interfaces)")
     yield
@@ -54,6 +56,8 @@ def index() -> HTMLResponse:
 @app.get("/api/config")
 def api_config() -> dict[str, object]:
     return {
+        "backend": BACKEND,
+        "model": MODEL,
         "max_speakers": MAX_SPEAKERS,
         "dialogue_speakers": list(DIALOGUE_SPEAKERS),
     }

@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Download Fish Audio S2 Pro weights from Hugging Face."""
+"""Download Fish Audio weights for the active runtime."""
 
 from __future__ import annotations
 
 import os
 
-from huggingface_hub import snapshot_download
+from runtime import IS_MLX
+from tts_engine import MODEL
 
-from tts_engine import MODEL, MODEL_DIR, _patch_model_config
 
+def download_cuda() -> None:
+    from huggingface_hub import snapshot_download
 
-def main() -> None:
+    from tts_engine_cuda import MODEL_DIR, _patch_model_config
+
     if (MODEL_DIR / "codec.pth").exists():
         print(f"Model already present at {MODEL_DIR}")
         _patch_model_config()
@@ -28,6 +31,25 @@ def main() -> None:
     snapshot_download(MODEL, local_dir=str(MODEL_DIR), token=token)
     _patch_model_config()
     print(f"Saved to {MODEL_DIR}")
+
+
+def download_mlx() -> None:
+    from tts_engine_mlx import MODEL_MARKER, MODEL_REPO, get_model
+
+    if MODEL_MARKER.exists():
+        print(f"MLX model already present ({MODEL_REPO})")
+        return
+
+    print(f"Downloading {MODEL_REPO} (~4.5 GB on first run)...")
+    get_model()
+    print(f"Saved to Hugging Face cache (marker: {MODEL_MARKER})")
+
+
+def main() -> None:
+    if IS_MLX:
+        download_mlx()
+    else:
+        download_cuda()
 
 
 if __name__ == "__main__":
