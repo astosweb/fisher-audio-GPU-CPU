@@ -10,11 +10,19 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.datastructures import UploadFile
 
-from tts_engine import SpeakerRef, generate_speech, get_model, write_mp3
+from tts_engine import (
+    DIALOGUE_SPEAKERS,
+    MAX_SPEAKERS,
+    SpeakerRef,
+    generate_speech,
+    get_model,
+    write_mp3,
+)
 
 ROOT = Path(__file__).parent
 STATIC = ROOT / "static"
@@ -43,48 +51,43 @@ def index() -> HTMLResponse:
     return HTMLResponse((STATIC / "index.html").read_text())
 
 
+@app.get("/api/config")
+def api_config() -> dict[str, object]:
+    return {
+        "max_speakers": MAX_SPEAKERS,
+        "dialogue_speakers": list(DIALOGUE_SPEAKERS),
+    }
+
+
 @app.post("/api/generate")
-async def api_generate(
-    text: str = Form(...),
-    speaker: int = Form(0),
-    ref_speaker: int = Form(0),
-    ref_speaker_1: int = Form(1),
-    temperature: float = Form(0.7),
-    top_p: float = Form(0.7),
-    max_tokens: int = Form(2048),
-    ref_text: str = Form(""),
-    ref_text_1: str = Form(""),
-    ref_audio: UploadFile | None = File(None),
-    ref_audio_1: UploadFile | None = File(None),
-):
+async def api_generate(request: Request):
+    form = await request.form()
+    text = str(form.get("text", ""))
+    speaker = int(form.get("speaker", 0))
+    temperature = float(form.get("temperature", 0.7))
+    top_p = float(form.get("top_p", 0.7))
+    max_tokens = int(form.get("max_tokens", 2048))
+
     tmp_refs: list[Path] = []
 
     try:
         refs: list[SpeakerRef] = []
 
-        if ref_audio and ref_audio.filename:
-            if not ref_text.strip():
+        for i in range(MAX_SPEAKERS):
+            ref_audio = form.get(f"ref_audio_{i}")
+            ref_text = str(form.get(f"ref_text_{i}", "")).strip()
+            if not isinstance(ref_audio, UploadFile) or not ref_audio.filename:
+                continue
+            if not ref_text:
                 raise HTTPException(
                     status_code=400,
-                    detail="Reference transcript is required with reference audio",
+                    detail=f"Reference transcript is required for speaker {i} clone audio",
                 )
             suffix = Path(ref_audio.filename).suffix or ".wav"
             tmp_ref = Path(tempfile.gettempdir()) / f"fish-ref-{uuid.uuid4().hex}{suffix}"
             tmp_ref.write_bytes(await ref_audio.read())
             tmp_refs.append(tmp_ref)
-            refs.append(SpeakerRef(str(tmp_ref), ref_text.strip(), ref_speaker))
-
-        if ref_audio_1 and ref_audio_1.filename:
-            if not ref_text_1.strip():
-                raise HTTPException(
-                    status_code=400,
-                    detail="Reference transcript is required for speaker 1 clone audio",
-                )
-            suffix = Path(ref_audio_1.filename).suffix or ".wav"
-            tmp_ref = Path(tempfile.gettempdir()) / f"fish-ref-{uuid.uuid4().hex}{suffix}"
-            tmp_ref.write_bytes(await ref_audio_1.read())
-            tmp_refs.append(tmp_ref)
-            refs.append(SpeakerRef(str(tmp_ref), ref_text_1.strip(), ref_speaker_1))
+            refs.append(SpeakerRef(str(tmp_ref), ref_text, i))
 
         result = generate_speech(
             text,

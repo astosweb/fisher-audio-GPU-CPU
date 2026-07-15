@@ -29,7 +29,7 @@ MODEL_DIR = Path(os.environ.get("FISH_MODEL_DIR", "checkpoints/s2-pro"))
 DECODER_CONFIG = "modded_dac_vq"
 SPEAKER_TAG = re.compile(r"<\|speaker:(\d+)\|>")
 INLINE_TAG = re.compile(r"\[[^\]]+\]")
-MAX_SPEAKERS = 5
+MAX_SPEAKERS = 10
 DIALOGUE_SPEAKERS = (0, 1)
 
 _engine: TTSInferenceEngine | None = None
