@@ -17,9 +17,11 @@ from tts_common import (
     validate_speaker_setup,
 )
 
-MODEL = "fish-s2-pro"
-MODEL_REPO = "appautomaton/fishaudio-s2-pro-8bit-mlx"
-MODEL_MARKER = Path(os.environ.get("FISH_MODEL_MARKER", ".cache/mlx-fish-s2-pro.ready"))
+MODEL_REPO = "mlx-community/fishaudio-s2-pro-8bit-mlx"
+MODEL = MODEL_REPO
+MODEL_MARKER = Path(
+    os.environ.get("FISH_MODEL_MARKER", ".cache/mlx-fish-s2-pro-mlx-community.ready")
+)
 
 _model = None
 
@@ -27,8 +29,8 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        print(f"Loading {MODEL} (MLX, {MODEL_REPO})...")
-        _model = mlx_speech.tts.load(MODEL)
+        print(f"Loading {MODEL_REPO} (MLX)...")
+        _model = mlx_speech.tts.load(MODEL_REPO)
         MODEL_MARKER.parent.mkdir(parents=True, exist_ok=True)
         MODEL_MARKER.write_text("ok\n", encoding="utf-8")
     return _model

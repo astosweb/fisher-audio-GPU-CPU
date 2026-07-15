@@ -80,23 +80,35 @@ if [ "$BACKEND" = "cuda" ] && command -v apt-get &>/dev/null; then
     libportaudiocpp0
 fi
 
+TARGET_PY="$("$PYTHON" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')"
+if [ -d "$VENV" ]; then
+  if [ -x "$VENV/bin/python" ]; then
+    VENV_PY="$("$VENV/bin/python" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")' 2>/dev/null || true)"
+  else
+    VENV_PY=""
+  fi
+  if [ "$VENV_PY" != "$TARGET_PY" ]; then
+    echo "Recreating .venv (Python ${VENV_PY:-missing} -> ${TARGET_PY})..." >&2
+    rm -rf "$VENV"
+  fi
+fi
+
 "$PYTHON" -m venv "$VENV"
-# shellcheck disable=SC1091
-source "$VENV/bin/activate"
-pip install -U pip wheel
+VENV_PYTHON="$VENV/bin/python"
+"$VENV_PYTHON" -m pip install -U pip wheel
 
 if [ "$BACKEND" = "mlx" ]; then
-  pip install mlx-speech
-  pip install -r "$ROOT/requirements.txt"
+  "$VENV_PYTHON" -m pip install mlx-speech
+  "$VENV_PYTHON" -m pip install -r "$ROOT/requirements.txt"
 else
   if [ ! -d "$FISH_SPEECH_DIR" ]; then
     git clone --depth 1 https://github.com/fishaudio/fish-speech.git "$FISH_SPEECH_DIR"
   fi
 
-  pip install torch==2.8.0 torchaudio==2.8.0 \
+  "$VENV_PYTHON" -m pip install torch==2.8.0 torchaudio==2.8.0 \
     --index-url "https://download.pytorch.org/whl/${CUDA_EXTRA}"
 
-  if ! pip install --no-build-isolation pyaudio; then
+  if ! "$VENV_PYTHON" -m pip install --no-build-isolation pyaudio; then
     cat >&2 <<'EOF'
 PyAudio failed to build. On Ubuntu/Debian, run:
 
@@ -111,11 +123,11 @@ EOF
     exit 1
   fi
 
-  pip install -e "$FISH_SPEECH_DIR"
-  pip install -r "$ROOT/requirements.txt"
+  "$VENV_PYTHON" -m pip install -e "$FISH_SPEECH_DIR"
+  "$VENV_PYTHON" -m pip install -r "$ROOT/requirements.txt"
 fi
 
-python "$ROOT/download_model.py"
+"$VENV_PYTHON" "$ROOT/download_model.py"
 
 echo
 echo "Setup complete ($BACKEND backend)."

@@ -32,7 +32,7 @@ OPEN_BROWSER="${OPEN_BROWSER:-auto}"
 CACHE_DIR="${CACHE_DIR:-$ROOT/.cache}"
 
 if [ "$BACKEND" = "mlx" ]; then
-  MODEL_MARKER="$ROOT/.cache/mlx-fish-s2-pro.ready"
+  MODEL_MARKER="$ROOT/.cache/mlx-fish-s2-pro-mlx-community.ready"
   MODEL_LABEL="Fish Audio S2 Pro (MLX)"
 else
   MODEL_MARKER="$ROOT/checkpoints/s2-pro/codec.pth"
