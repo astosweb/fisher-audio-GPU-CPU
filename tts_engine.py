@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
@@ -11,6 +12,12 @@ from typing import BinaryIO
 import numpy as np
 import soundfile as sf
 import torch
+
+warnings.filterwarnings(
+    "ignore",
+    message="Logical operators 'and' and 'or' are deprecated for non-scalar tensors",
+    category=UserWarning,
+)
 from fish_speech.inference_engine import TTSInferenceEngine
 from fish_speech.models.dac.inference import load_model as load_decoder_model
 from fish_speech.models.text2semantic.inference import launch_thread_safe_queue
@@ -25,6 +32,58 @@ MAX_SPEAKERS = 5
 DIALOGUE_SPEAKERS = (0, 1)
 
 _engine: TTSInferenceEngine | None = None
+DEFAULT_MAX_SEQ_LEN = 4096
+
+
+def _configure_torch() -> None:
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    if hasattr(torch, "set_float32_matmul_precision"):
+        torch.set_float32_matmul_precision("high")
+
+
+def _patch_model_config() -> None:
+    """Shrink KV cache pre-allocation (32768 -> 4096 saves ~5 GB VRAM, ~1.7x faster)."""
+    config_path = MODEL_DIR / "config.json"
+    if not config_path.exists():
+        return
+
+    max_seq_len = int(os.environ.get("FISH_MAX_SEQ_LEN", str(DEFAULT_MAX_SEQ_LEN)))
+    with config_path.open(encoding="utf-8") as f:
+        config = json.load(f)
+
+    text_cfg = config.get("text_config", {})
+    current = text_cfg.get("max_seq_len")
+    if current == max_seq_len:
+        return
+
+    text_cfg["max_seq_len"] = max_seq_len
+    config["text_config"] = text_cfg
+    with config_path.open("w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+    print(f"Patched model max_seq_len: {current} -> {max_seq_len}")
+
+
+def _warmup(engine: TTSInferenceEngine) -> None:
+    if os.environ.get("FISH_WARMUP", "1") != "1":
+        return
+    print("Warming up GPU kernels (first compile may take 1-2 min)...")
+    req = ServeTTSRequest(
+        text="<|speaker:0|>Hello.",
+        references=[],
+        temperature=0.7,
+        top_p=0.7,
+        max_new_tokens=64,
+        chunk_length=512,
+        format="wav",
+    )
+    for result in engine.inference(req):
+        if result.code == "error":
+            raise RuntimeError(str(result.error))
+        if result.code == "final":
+            break
+    print("Warmup complete.")
 
 
 def _resolve_device() -> str:
@@ -44,6 +103,9 @@ def _load_engine() -> TTSInferenceEngine:
             f"Run: python download_model.py"
         )
 
+    _configure_torch()
+    _patch_model_config()
+
     half = os.environ.get("FISH_HALF", "0") == "1"
     compile = os.environ.get("FISH_COMPILE", "1") == "1"
     device = _resolve_device()
@@ -60,12 +122,14 @@ def _load_engine() -> TTSInferenceEngine:
         checkpoint_path=str(decoder_path),
         device=device,
     )
-    return TTSInferenceEngine(
+    engine = TTSInferenceEngine(
         llama_queue=llama_queue,
         decoder_model=decoder_model,
         precision=precision,
         compile=compile,
     )
+    _warmup(engine)
+    return engine
 
 
 def get_model() -> TTSInferenceEngine:
@@ -215,7 +279,7 @@ def generate_speech(
         temperature=temperature,
         top_p=top_p,
         max_new_tokens=token_budget,
-        chunk_length=1000,
+        chunk_length=512,
         format="wav",
     )
 
