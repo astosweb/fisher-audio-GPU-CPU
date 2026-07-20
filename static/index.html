@@ -521,7 +521,7 @@
       <div class="card-title">Script</div>
 
       <div class="speaker-row">
-        <label>Default speaker</label>
+        <label>Default voice</label>
         <div class="speaker-picker" id="speaker-picker"></div>
       </div>
       <p class="hint" id="speaker-hint" style="margin-top:-0.35rem;margin-bottom:0.85rem"></p>
@@ -619,11 +619,23 @@
       excited: "[excited] And then I saw it! [laughing] You won't believe this.",
       whisper: "[whispering] Just between us... [short pause] this model runs entirely on your Mac.",
       story: "[pause] Once upon a time, in a quiet village by the sea. [sad] A fisherman told a tale. [whispering] Listen closely.",
-      dialogue: "<|speaker:0|>[excited] Welcome everyone to the demo! <|speaker:1|>[laughing] Thanks for having me. <|speaker:0|>[whispering] Let's hear multi-speaker dialogue.",
-      dialogue_tr: "<|speaker:0|>[whispering] Gönderdiğin arabalar güzel ama çok modern görünmüyorlar. <|speaker:1|>[whispering] Bana biraz daha şık bir araba lazım.",
+      dialogue: "<|voice:Egirl|>[excited] Welcome everyone to the demo! <|voice:Selene|>[laughing] Thanks for having me. <|voice:Egirl|>[whispering] Let's hear multi-speaker dialogue.",
+      dialogue_tr: "<|voice:Egirl|>[whispering] Gönderdiğin arabalar güzel ama çok modern görünmüyorlar. <|voice:Selene|>[whispering] Bana biraz daha şık bir araba lazım.",
     };
 
-    const SPEAKER_TAG_RE = /<\|speaker:(\d+)\|>/g;
+    const DEFAULT_VOICES = [
+      { id: 0, name: "Egirl", description: "A cute e-girl to chat with you." },
+      { id: 1, name: "Selene", description: "A meditative female voice." },
+      { id: 2, name: "Adrian", description: "A steady and reliable narrator." },
+      { id: 3, name: "Sarah", description: "An engaged speaker." },
+      { id: 4, name: "Ethan", description: "A curious explainer." },
+      { id: 5, name: "Laura", description: "A confident female narrator." },
+      { id: 6, name: "Jordan", description: "A motivational speaker." },
+      { id: 7, name: "Hannah", description: "A conversation specialist." },
+    ];
+
+    const SPEAKER_TAG_RE = /<\|speaker:(\d+)\|>/gi;
+    const VOICE_TAG_RE = /<\|voice:([^|>]+)\|>/gi;
     const textArea = document.getElementById("text");
     const speakerHint = document.getElementById("speaker-hint");
     const cloneHint = document.getElementById("clone-hint");
@@ -631,115 +643,126 @@
     const cloneSlots = document.getElementById("clone-slots");
     const tagPanels = document.getElementById("tag-panels");
 
-    let MAX_SPEAKERS = 10;
+    let VOICES = DEFAULT_VOICES.slice();
     let DIALOGUE_SPEAKERS = [0, 1];
     let selectedSpeaker = 0;
+
+    function voiceById(id) {
+      return VOICES.find((v) => v.id === id) || { id, name: `Voice ${id}`, description: "" };
+    }
+
+    function voiceName(id) {
+      return voiceById(id).name;
+    }
 
     function isDialogueSpeaker(id) {
       return DIALOGUE_SPEAKERS.includes(id);
     }
 
-    function cloneSpeakerRangeLabel() {
-      const first = Math.min(...DIALOGUE_SPEAKERS) + 1;
-      return first >= MAX_SPEAKERS - 1 ? `Speaker ${MAX_SPEAKERS - 1}` : `Speakers ${first}–${MAX_SPEAKERS - 1}`;
+    function dialogueVoiceNames() {
+      return DIALOGUE_SPEAKERS.map(voiceName);
     }
 
     function getSpeakerIds(text) {
-      return [...text.matchAll(SPEAKER_TAG_RE)].map((match) => Number(match[1]));
+      const ids = [];
+      for (const match of text.matchAll(SPEAKER_TAG_RE)) {
+        ids.push(Number(match[1]));
+      }
+      for (const match of text.matchAll(VOICE_TAG_RE)) {
+        const voice = VOICES.find((v) => v.name.toLowerCase() === match[1].trim().toLowerCase());
+        if (voice) ids.push(voice.id);
+      }
+      return ids;
     }
 
     function updateCloneHint() {
       cloneHint.innerHTML =
-        "For dialogue, upload one reference clip per speaker slot. " +
-        `Speaker ${DIALOGUE_SPEAKERS.join(" and ")} also work without cloning as built-in dialogue voices. ` +
-        `${cloneSpeakerRangeLabel()} require cloned reference audio.`;
+        "Optional: upload your own reference clip to override a default voice. " +
+        "Each default voice already ships with a Fish Audio sample used for local cloning.";
     }
 
     function updateSpeakerHint() {
       const ids = getSpeakerIds(textArea.value);
+      const builtIn = dialogueVoiceNames();
       if (ids.length >= 2) {
         speakerHint.innerHTML =
-          `Dialogue mode: speakers ${[...new Set(ids)].join(", ")} detected. ` +
-          `Use <code>&lt;|speaker:${DIALOGUE_SPEAKERS[0]}|&gt;</code> + ` +
-          `<code>&lt;|speaker:${DIALOGUE_SPEAKERS[1]}|&gt;</code> for built-in voices, ` +
-          "or upload a clone for each extra slot.";
+          `Dialogue mode: ${[...new Set(ids)].map(voiceName).join(", ")} detected. ` +
+          `Prefer <strong>${builtIn[0]}</strong> + <strong>${builtIn[1]}</strong> for multi-speaker, ` +
+          "or upload a clone to override any voice.";
         return;
       }
       if (ids.length === 1) {
         speakerHint.innerHTML =
-          `Inline tag uses speaker ${ids[0]}. The default speaker buttons above are ignored while tags are present.`;
+          `Inline tag uses <strong>${voiceName(ids[0])}</strong>. ` +
+          "The default voice buttons above are ignored while tags are present.";
         return;
       }
       speakerHint.innerHTML =
-        "For <strong>multi-speaker dialogue</strong>, put all turns in one text with " +
-        `<code>&lt;|speaker:${DIALOGUE_SPEAKERS[0]}|&gt;</code> and ` +
-        `<code>&lt;|speaker:${DIALOGUE_SPEAKERS[1]}|&gt;</code> — not separate generations. ` +
-        `${cloneSpeakerRangeLabel()} only work with cloned reference audio assigned to that slot.`;
+        `Selected default voice is cloned from its Fish Audio sample. ` +
+        `For dialogue, insert <strong>${builtIn[0]}</strong> / <strong>${builtIn[1]}</strong> voice tags in one script.`;
     }
 
     function buildSpeakerPicker() {
       speakerPicker.innerHTML = "";
-      for (let i = 0; i < MAX_SPEAKERS; i++) {
+      VOICES.forEach((voice) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "speaker-option" + (isDialogueSpeaker(i) ? " dialogue" : "");
-        if (i === selectedSpeaker) btn.classList.add("active");
-        btn.dataset.speaker = String(i);
-        btn.textContent = `Speaker ${i}`;
-        btn.title = isDialogueSpeaker(i)
-          ? "Built-in dialogue voice"
-          : "Needs cloned reference audio";
+        btn.className = "speaker-option" + (isDialogueSpeaker(voice.id) ? " dialogue" : "");
+        if (voice.id === selectedSpeaker) btn.classList.add("active");
+        btn.dataset.speaker = String(voice.id);
+        btn.textContent = voice.name;
+        btn.title = `${voice.description} Uses built-in Fish Audio sample.`;
         btn.addEventListener("click", () => {
-          selectedSpeaker = i;
+          selectedSpeaker = voice.id;
           document.querySelectorAll(".speaker-option").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
         });
         speakerPicker.appendChild(btn);
-      }
+      });
     }
 
     function buildCloneSlots() {
       cloneSlots.innerHTML = "";
-      for (let i = 0; i < MAX_SPEAKERS; i++) {
+      VOICES.forEach((voice, index) => {
         const row = document.createElement("div");
         row.className = "grid-2";
-        if (i > 0) row.style.marginTop = "0.85rem";
+        if (index > 0) row.style.marginTop = "0.85rem";
         row.innerHTML = `
           <div>
-            <label>Speaker ${i} reference audio${isDialogueSpeaker(i) ? " (optional)" : ""}</label>
-            <label class="file-drop" id="file-drop-${i}">
-              <input type="file" id="ref-audio-${i}" accept="audio/*,.wav,.mp3,.m4a,.flac" />
-              <span id="file-label-${i}">Drop a WAV/MP3 or click to browse</span>
+            <label>${voice.name} reference audio (optional override)</label>
+            <label class="file-drop" id="file-drop-${voice.id}">
+              <input type="file" id="ref-audio-${voice.id}" accept="audio/*,.wav,.mp3,.m4a,.flac" />
+              <span id="file-label-${voice.id}">Drop a WAV/MP3 or click to browse</span>
             </label>
           </div>
           <div>
-            <label for="ref-text-${i}">Speaker ${i} transcript</label>
-            <input type="text" id="ref-text-${i}" placeholder="Exact words spoken in the reference clip" />
+            <label for="ref-text-${voice.id}">${voice.name} transcript</label>
+            <input type="text" id="ref-text-${voice.id}" placeholder="Exact words spoken in the reference clip" />
           </div>
         `;
         cloneSlots.appendChild(row);
 
-        const drop = row.querySelector(`#file-drop-${i}`);
-        const input = row.querySelector(`#ref-audio-${i}`);
-        const label = row.querySelector(`#file-label-${i}`);
+        const drop = row.querySelector(`#file-drop-${voice.id}`);
+        const input = row.querySelector(`#ref-audio-${voice.id}`);
+        const label = row.querySelector(`#file-label-${voice.id}`);
         bindFileDrop(drop, input, label);
-      }
+      });
     }
 
     function buildSpeakerTags() {
       const speakerTagSection = document.createElement("div");
       speakerTagSection.className = "tag-section";
-      speakerTagSection.innerHTML = `<div class="tag-category">Speakers</div><div class="tags"></div>`;
+      speakerTagSection.innerHTML = `<div class="tag-category">Voices</div><div class="tags"></div>`;
       const speakerTagContainer = speakerTagSection.querySelector(".tags");
-      for (let i = 0; i < MAX_SPEAKERS; i++) {
+      VOICES.forEach((voice) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "tag speaker-tag";
-        btn.textContent = `<|speaker:${i}|>`;
-        btn.title = `Insert speaker ${i} tag`;
-        btn.addEventListener("click", () => insertSpeakerTag(i));
+        btn.textContent = voice.name;
+        btn.title = `Insert ${voice.name} (${voice.description})`;
+        btn.addEventListener("click", () => insertSpeakerTag(voice.id));
         speakerTagContainer.appendChild(btn);
-      }
+      });
       tagPanels.appendChild(speakerTagSection);
 
       for (const [category, tags] of Object.entries(TAG_GROUPS)) {
@@ -760,16 +783,10 @@
       }
     }
 
-    function hasRefForSpeaker(id) {
-      const refFile = document.getElementById(`ref-audio-${id}`)?.files[0];
-      const refText = document.getElementById(`ref-text-${id}`)?.value.trim();
-      return Boolean(refFile && refText);
-    }
-
     async function init() {
       try {
         const cfg = await fetch("/api/config").then((res) => res.json());
-        MAX_SPEAKERS = cfg.max_speakers ?? MAX_SPEAKERS;
+        if (Array.isArray(cfg.voices) && cfg.voices.length) VOICES = cfg.voices;
         DIALOGUE_SPEAKERS = cfg.dialogue_speakers ?? DIALOGUE_SPEAKERS;
       } catch {
         /* fall back to defaults */
@@ -785,7 +802,7 @@
 
     function insertSpeakerTag(speaker) {
       const ta = textArea;
-      const insert = `<|speaker:${speaker}|>`;
+      const insert = `<|voice:${voiceName(speaker)}|>`;
       const start = ta.selectionStart ?? ta.value.length;
       const end = ta.selectionEnd ?? start;
       ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
@@ -866,22 +883,11 @@
         return;
       }
 
-      const speakerIds = [...new Set(getSpeakerIds(text))];
-      const missingClones = speakerIds.filter((id) => !isDialogueSpeaker(id) && !hasRefForSpeaker(id));
-      if (missingClones.length) {
-        statusEl.textContent =
-          `Upload reference audio and transcript for speaker${missingClones.length > 1 ? "s" : ""} ` +
-          `${missingClones.join(", ")}. Or use built-in dialogue speakers ${DIALOGUE_SPEAKERS.join(" and ")}.`;
-        statusEl.className = "status error";
-        document.getElementById("clone-section").classList.add("open");
-        return;
-      }
-
-      for (let i = 0; i < MAX_SPEAKERS; i++) {
-        const refFile = document.getElementById(`ref-audio-${i}`)?.files[0];
-        const refText = document.getElementById(`ref-text-${i}`)?.value.trim() ?? "";
+      for (const voice of VOICES) {
+        const refFile = document.getElementById(`ref-audio-${voice.id}`)?.files[0];
+        const refText = document.getElementById(`ref-text-${voice.id}`)?.value.trim() ?? "";
         if (refFile && !refText) {
-          statusEl.textContent = `Add a reference transcript for speaker ${i}.`;
+          statusEl.textContent = `Add a reference transcript for ${voice.name}.`;
           statusEl.className = "status error";
           document.getElementById("clone-section").classList.add("open");
           return;
@@ -896,7 +902,7 @@
 
       const form = new FormData();
       form.append("text", text);
-      form.append("speaker", String(selectedSpeaker));
+      form.append("speaker", voiceName(selectedSpeaker));
       const maxTokensEl = document.getElementById("max-tokens");
       let maxTokens = Number(maxTokensEl.value);
       if (/\[[^\]]+\]/.test(text)) {
@@ -906,11 +912,11 @@
       form.append("temperature", document.getElementById("temperature").value);
       form.append("top_p", document.getElementById("top-p").value);
       form.append("max_tokens", String(maxTokens));
-      for (let i = 0; i < MAX_SPEAKERS; i++) {
-        const refFile = document.getElementById(`ref-audio-${i}`)?.files[0];
-        const refText = document.getElementById(`ref-text-${i}`)?.value.trim() ?? "";
-        form.append(`ref_text_${i}`, refText);
-        if (refFile) form.append(`ref_audio_${i}`, refFile);
+      for (const voice of VOICES) {
+        const refFile = document.getElementById(`ref-audio-${voice.id}`)?.files[0];
+        const refText = document.getElementById(`ref-text-${voice.id}`)?.value.trim() ?? "";
+        form.append(`ref_text_${voice.id}`, refText);
+        if (refFile) form.append(`ref_audio_${voice.id}`, refFile);
       }
 
       try {

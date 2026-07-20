@@ -14,13 +14,15 @@ from tts_common import (
     effective_max_tokens,
     prepare_ref_text_with_speaker,
     prepare_text_with_speaker,
+    resolve_refs_with_builtins,
     validate_speaker_setup,
 )
 
-MODEL_REPO = "mlx-community/fishaudio-s2-pro-8bit-mlx"
-MODEL = MODEL_REPO
+# mlx-speech alias for fishaudio/s2-pro (loads appautomaton/fishaudio-s2-pro-8bit-mlx)
+MODEL = "fishaudio/s2-pro"
+MODEL_REPO = "fish-s2-pro"
 MODEL_MARKER = Path(
-    os.environ.get("FISH_MODEL_MARKER", ".cache/mlx-fish-s2-pro-mlx-community.ready")
+    os.environ.get("FISH_MODEL_MARKER", ".cache/mlx-fish-s2-pro.ready")
 )
 
 _model = None
@@ -29,7 +31,7 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        print(f"Loading {MODEL_REPO} (MLX)...")
+        print(f"Loading {MODEL} via {MODEL_REPO} (MLX)...")
         _model = mlx_speech.tts.load(MODEL_REPO)
         MODEL_MARKER.parent.mkdir(parents=True, exist_ok=True)
         MODEL_MARKER.write_text("ok\n", encoding="utf-8")
@@ -64,6 +66,7 @@ def generate_speech(
                 raise ValueError("Reference transcript is required with reference audio")
 
     text = prepare_text_with_speaker(text, speaker)
+    refs = resolve_refs_with_builtins(text, speaker, refs, max_refs=1)
     token_budget = effective_max_tokens(text, max_tokens)
 
     warning = validate_speaker_setup(text, refs)
@@ -75,7 +78,7 @@ def generate_speech(
         if len(refs) > 1:
             raise ValueError(
                 "MLX backend supports one voice clone at a time. "
-                "Use <|speaker:0|> and <|speaker:1|> for built-in dialogue voices."
+                "Use a single default voice, or Egirl/Selene tags for dialogue without custom clones."
             )
         ref = refs[0]
         generate_kwargs["reference_audio"] = ref.audio_path

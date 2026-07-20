@@ -6,10 +6,11 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from tts_engine import BACKEND, MODEL, generate_speech, write_mp3
+from tts_engine import BACKEND, DEFAULT_VOICES, MODEL, generate_speech, resolve_speaker, write_mp3
 
 
 def main() -> None:
+    voice_names = ", ".join(str(v["name"]) for v in DEFAULT_VOICES)
     parser = argparse.ArgumentParser(description="Fish Audio S2 Pro local TTS")
     parser.add_argument(
         "--text",
@@ -21,6 +22,11 @@ def main() -> None:
         "--output",
         default="output.mp3",
         help="Output MP3 path",
+    )
+    parser.add_argument(
+        "--voice",
+        default="Egirl",
+        help=f"Default voice name or speaker index ({voice_names})",
     )
     parser.add_argument(
         "--ref-audio",
@@ -50,10 +56,17 @@ def main() -> None:
     if bool(args.ref_audio) != bool(args.ref_text):
         parser.error("--ref-audio and --ref-text must be used together")
 
+    try:
+        speaker = resolve_speaker(args.voice)
+    except ValueError as e:
+        parser.error(str(e))
+
     print(f"Loading {MODEL} via {BACKEND} (run download_model.py if weights are missing)...")
+    print(f"Voice: {args.voice} → speaker {speaker}")
     print(f"Generating: {args.text!r}")
     result = generate_speech(
         args.text,
+        speaker=speaker,
         temperature=args.temperature,
         top_p=args.top_p,
         max_tokens=args.max_tokens,

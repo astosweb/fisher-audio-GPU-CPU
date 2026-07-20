@@ -21,13 +21,12 @@ from fish_speech.models.text2semantic.inference import launch_thread_safe_queue
 from fish_speech.utils.schema import ServeReferenceAudio, ServeTTSRequest
 
 from tts_common import (
-    DIALOGUE_SPEAKERS,
-    MAX_SPEAKERS,
     GenerationResult,
     SpeakerRef,
     effective_max_tokens,
     prepare_ref_text_with_speaker,
     prepare_text_with_speaker,
+    resolve_refs_with_builtins,
     validate_speaker_setup,
 )
 
@@ -196,6 +195,7 @@ def generate_speech(
                 raise ValueError("Reference transcript is required with reference audio")
 
     text = prepare_text_with_speaker(text, speaker)
+    refs = resolve_refs_with_builtins(text, speaker, refs)
     token_budget = effective_max_tokens(text, max_tokens)
 
     warning = validate_speaker_setup(text, refs)

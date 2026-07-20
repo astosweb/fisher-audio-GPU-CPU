@@ -5,18 +5,24 @@ from __future__ import annotations
 from runtime import BACKEND, IS_CUDA, IS_MLX
 
 from tts_common import (
+    DEFAULT_VOICES,
     DIALOGUE_SPEAKERS,
     MAX_SPEAKERS,
     GenerationResult,
     SpeakerRef,
     effective_max_tokens,
+    ensure_all_voice_samples,
     extract_speaker_ids,
     has_inline_tags,
     has_speaker_tags,
     prepare_ref_text_with_speaker,
     prepare_text_with_speaker,
+    public_voices,
+    resolve_refs_with_builtins,
+    resolve_speaker,
     save_upload,
     validate_speaker_setup,
+    voice_name,
     write_mp3,
 )
 
@@ -29,6 +35,7 @@ else:
 
 __all__ = [
     "BACKEND",
+    "DEFAULT_VOICES",
     "DIALOGUE_SPEAKERS",
     "GenerationResult",
     "IS_CUDA",
@@ -37,6 +44,7 @@ __all__ = [
     "MODEL",
     "SpeakerRef",
     "effective_max_tokens",
+    "ensure_all_voice_samples",
     "extract_speaker_ids",
     "generate_speech",
     "get_model",
@@ -44,8 +52,12 @@ __all__ = [
     "has_speaker_tags",
     "prepare_ref_text_with_speaker",
     "prepare_text_with_speaker",
+    "public_voices",
+    "resolve_refs_with_builtins",
+    "resolve_speaker",
     "save_upload",
     "validate_speaker_setup",
+    "voice_name",
     "write_mp3",
 ]
 

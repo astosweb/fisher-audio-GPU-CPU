@@ -23,6 +23,9 @@ from tts_engine import (
     SpeakerRef,
     generate_speech,
     get_model,
+    public_voices,
+    resolve_speaker,
+    voice_name,
     write_mp3,
 )
 
@@ -60,6 +63,7 @@ def api_config() -> dict[str, object]:
         "model": MODEL,
         "max_speakers": MAX_SPEAKERS,
         "dialogue_speakers": list(DIALOGUE_SPEAKERS),
+        "voices": public_voices(),
     }
 
 
@@ -67,7 +71,10 @@ def api_config() -> dict[str, object]:
 async def api_generate(request: Request):
     form = await request.form()
     text = str(form.get("text", ""))
-    speaker = int(form.get("speaker", 0))
+    try:
+        speaker = resolve_speaker(form.get("speaker", 0))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     temperature = float(form.get("temperature", 0.7))
     top_p = float(form.get("top_p", 0.7))
     max_tokens = int(form.get("max_tokens", 2048))
@@ -85,7 +92,9 @@ async def api_generate(request: Request):
             if not ref_text:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Reference transcript is required for speaker {i} clone audio",
+                    detail=(
+                        f"Reference transcript is required for {voice_name(i)} clone audio"
+                    ),
                 )
             suffix = Path(ref_audio.filename).suffix or ".wav"
             tmp_ref = Path(tempfile.gettempdir()) / f"fish-ref-{uuid.uuid4().hex}{suffix}"

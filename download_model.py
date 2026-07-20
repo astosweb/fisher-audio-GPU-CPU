@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 
 from runtime import IS_MLX
+from tts_common import ensure_all_voice_samples
 from tts_engine import MODEL
 
 
@@ -45,11 +46,17 @@ def download_mlx() -> None:
     print(f"Saved to Hugging Face cache (marker: {MODEL_MARKER})")
 
 
+def download_voices() -> None:
+    paths = ensure_all_voice_samples()
+    print(f"Cached {len(paths)} default voice samples in .cache/voices/")
+
+
 def main() -> None:
     if IS_MLX:
         download_mlx()
     else:
         download_cuda()
+    download_voices()
 
 
 if __name__ == "__main__":
